@@ -57,19 +57,18 @@ branches.each do |branch|
 					remove_link = false
 					footerFile.each_line do |line|
 
-
 						if line =~ /(link_to\(image_tag\(.*\"\/images\/powered\-by\-appfolio.gif"),.*\'http:\/\/(www.)?appfolio.com',\{[^}]*)}/
 							has_href_in_footer = true
 							hrefStr = $1
-							if line =~ /.*link_to.*/
+							if line =~ /.*link_to\(image_tag.*/
 								result << "link_does_not_exist "
 								link_removed = true
 								
 							else
 								oldLine = line
-								line = line.gsub(/(link_to\(image_tag\(.*\"\/images\/powered\-by\-appfolio.gif"),.*\'http:\/\/(www.)?appfolio.com',\{[^}]*)}/, /image_tag\(.*\'\/images\/powered-by-appfolio.gif',:alt => .*\'Property management and accounting software by AppFolio')/)
+								line = line.gsub(hrefStr, /(image_tag\(\'\/images/powered-by-appfolio.gif', {:alt => \'Property management and accounting software by AppFolio'})))
 								remove_link = true
-								result << "no_nofollow "
+								result << "link_removed "
 								puts oldLine
 								puts line
 								puts "\n"
@@ -106,66 +105,7 @@ branches.each do |branch|
 				no_footerFile_count += 1
 			end
 
-			# second pattern
-			footFName = "app/views/shared/_footer.html.erb"
-			new_footFName = "app/views/shared/_footer.html.erb.new"
-			result << "#{customer_name} "
-			if File.file?(footFName)
-				footerFile = File.open(footFName, "r")
-				newfooterFile = File.open(new_footFName, "wb")
-				if footerFile && newfooterFile
-					has_href_in_footer = false
-					link_removed = false
-					remove_link = false
-					footerFile.each_line do |line|
-
-						if line =~ /(<a[^>]*href="http:\/\/(www.)?appfolio.com"[^>]*)>/
-							has_href_in_footer = true
-							hrefStr = $1
-							if line =~ /.*rel="nofollow".*/
-								result << "link_removed "
-								link_removed = true
-								
-							else
-								oldLine = line
-								line = line.gsub(/(<a[^>]*href="http:\/\/(www.)?appfolio.com"[^>]*)>/, hrefStr + ' rel="nofollow">')
-								remove_link = true
-								result << "no_nofollow "
-								puts oldLine
-								puts line
-								puts "\n"
-							end
-							result << line
-						end
-						newfooterFile << line
-
-					end
-					footerFile.close
-					newfooterFile.close
-					if link_removed
-						has_nof_count += 1
-					end
-					if remove_link
-						no_nof_count += 1
-						puts `mv app/views/shared/_footer.html.erb.new app/views/shared/_footer.html.erb`
-						puts `git commit -am "yz - add rel=nofollow"`
-						puts `git push origin #{customer_name}`
-					else
-						puts `rm app/views/shared/_footer.html.erb.new`
-					end
-
-					if !has_href_in_footer
-						no_href_appfolio_count += 1
-						result << "no_appfolio_herf\n"
-					end
-
-				end
-				
-				has_subFooterFile_count += 1
-			else
-				result << "footer_file_do_not_exist\n"
-				no_footerFile_count += 1
-			end
+			#
 
 			# save web url
 			prodFName = "config/deploy/prod.rb"
