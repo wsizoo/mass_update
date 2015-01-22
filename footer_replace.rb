@@ -44,7 +44,7 @@ branches.each do |branch|
 			puts customer_name = $1
 			puts `git checkout #{customer_name}`
 
-			# first pattern
+			# Block Template Pattern - Master
 			footFName = "app/views/shared/_footer_sub.html.erb"
 			new_footFName = "app/views/shared/_footer_sub.html.erb.new"
 			result << "#{customer_name} "
@@ -52,22 +52,23 @@ branches.each do |branch|
 				footerFile = File.open(footFName, "r")
 				newfooterFile = File.open(new_footFName, "wb")
 				if footerFile && newfooterFile
-					has_href_appfolio = false
-					has_nofollow = false
-					add_nofollow = false
+					has_href_in_footer = false
+					link_removed = false
+					remove_link = false
 					footerFile.each_line do |line|
 
-						if line =~ /(link_to\(.*\'http:\/\/(www.)?appfolio.com',\{[^}]*)}/
-							has_href_appfolio = true
+
+						if line =~ /(link_to\(image_tag\(.*\"\/images\/powered\-by\-appfolio.gif"),.*\'http:\/\/(www.)?appfolio.com',\{[^}]*)}/
+							has_href_in_footer = true
 							hrefStr = $1
-							if line =~ /.*:rel => "nofollow".*/
-								result << "has_nofollow "
-								has_nofollow = true
+							if line =~ /.*link_to.*/
+								result << "link_does_not_exist "
+								link_removed = true
 								
 							else
 								oldLine = line
-								line = line.gsub(/(link_to\(.*\'http:\/\/(www.)?appfolio.com',\{[^}]*)}/, hrefStr + ', :rel => "nofollow"}')
-								add_nofollow = true
+								line = line.gsub(/(link_to\(image_tag\(.*\"\/images\/powered\-by\-appfolio.gif"),.*\'http:\/\/(www.)?appfolio.com',\{[^}]*)}/, /image_tag\(.*\'\/images\/powered-by-appfolio.gif',:alt => .*\'Property management and accounting software by AppFolio')/)
+								remove_link = true
 								result << "no_nofollow "
 								puts oldLine
 								puts line
@@ -80,21 +81,21 @@ branches.each do |branch|
 					end
 					footerFile.close
 					newfooterFile.close
-					if has_nofollow
+					if link_removed
 						has_nof_count += 1
 					end
-					if add_nofollow
+					if remove_link
 						no_nof_count += 1
 						puts `mv app/views/shared/_footer_sub.html.erb.new app/views/shared/_footer_sub.html.erb`
-						puts `git commit -am "yz - add rel=nofollow"`
+						puts `git commit -am "mass update - remove anchor link from footer"`
 						puts `git push origin #{customer_name}`
 					else
 						puts `rm app/views/shared/_footer_sub.html.erb.new`
 					end
 
-					if !has_href_appfolio
+					if !has_href_in_footer
 						no_href_appfolio_count += 1
-						result << "no_appfolio_herf\n"
+						result << "nolink_in_footer\n"
 					end
 
 				end
@@ -113,22 +114,22 @@ branches.each do |branch|
 				footerFile = File.open(footFName, "r")
 				newfooterFile = File.open(new_footFName, "wb")
 				if footerFile && newfooterFile
-					has_href_appfolio = false
-					has_nofollow = false
-					add_nofollow = false
+					has_href_in_footer = false
+					link_removed = false
+					remove_link = false
 					footerFile.each_line do |line|
 
 						if line =~ /(<a[^>]*href="http:\/\/(www.)?appfolio.com"[^>]*)>/
-							has_href_appfolio = true
+							has_href_in_footer = true
 							hrefStr = $1
 							if line =~ /.*rel="nofollow".*/
-								result << "has_nofollow "
-								has_nofollow = true
+								result << "link_removed "
+								link_removed = true
 								
 							else
 								oldLine = line
 								line = line.gsub(/(<a[^>]*href="http:\/\/(www.)?appfolio.com"[^>]*)>/, hrefStr + ' rel="nofollow">')
-								add_nofollow = true
+								remove_link = true
 								result << "no_nofollow "
 								puts oldLine
 								puts line
@@ -141,10 +142,10 @@ branches.each do |branch|
 					end
 					footerFile.close
 					newfooterFile.close
-					if has_nofollow
+					if link_removed
 						has_nof_count += 1
 					end
-					if add_nofollow
+					if remove_link
 						no_nof_count += 1
 						puts `mv app/views/shared/_footer.html.erb.new app/views/shared/_footer.html.erb`
 						puts `git commit -am "yz - add rel=nofollow"`
@@ -153,7 +154,7 @@ branches.each do |branch|
 						puts `rm app/views/shared/_footer.html.erb.new`
 					end
 
-					if !has_href_appfolio
+					if !has_href_in_footer
 						no_href_appfolio_count += 1
 						result << "no_appfolio_herf\n"
 					end
