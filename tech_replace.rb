@@ -25,12 +25,12 @@ Dir.chdir("customer_websites")
 branches = `git branch`
 branches = branches.split
 
-has_footerFile_count = 0
-has_subFooterFile_count = 0
+has_techFile_count = 0
+has_subTechFile_count = 0
 has_nof_count = 0
 no_nof_count = 0
 no_href_appfolio_count = 0
-no_footerFile_count = 0
+no_techFile_count = 0
 try_count = 0
 
 no_nof_cnt = 0
@@ -44,68 +44,66 @@ branches.each do |branch|
 			puts customer_name = $1
 			puts `git checkout #{customer_name}`
 
-			# Block Template Pattern - Master
-			footFName = "app/views/shared/_footer_sub.html.erb"
-			new_footFName = "app/views/shared/_footer_sub.html.erb.new"
+			# block pattern
+			techFName = "app/views/our_technology/_index.html.erb"
+			new_techFName = "app/views/our_technology/_index.html.erb.new"
 			result << "#{customer_name} "
-			if File.file?(footFName)
-				footerFile = File.open(footFName, "r")
-				newfooterFile = File.open(new_footFName, "wb")
-				if footerFile && newfooterFile
-					has_href_in_footer = false
-					link_removed = false
-					remove_link = false
-					footerFile.each_line do |line|
+			if File.file?(techFName)
+				techFile = File.open(techFName, "r")
+				newtechFile = File.open(new_techFName, "wb")
+				if techFile && newtechFile
+					has_href_appfolio = false
+					has_link = false
+					add_link = false
+					techFile.each_line do |line|
 
-						if line =~ /(link_to\(image_tag\(.*\"\/images\/powered-by-appfolio.gif"),.*\'http:\/\/(www.)?appfolio.com',\{[^}]*}/
-							has_href_in_footer = true
+						if line =~ /(link_to\(.*\'http:\/\/(www.)?appfolio.com',\{[^}]*)}/
+							has_href_appfolio = true
 							hrefStr = $1
-							if line =~ /.*link_to\(image_tag.*/
-								result << "link_does_not_exist "
-								link_removed = true
+							if line !~ /(link_to\(.*\'http:\/\/(www.)?appfolio.com',\{[^}]*)}/
+								result << "no_appfolio_link "
+								has_link = true
 								
 							else
 								oldLine = line
-								line = line.gsub(hrefStr, image_tag('/images/powered-by-appfolio.gif', {:alt => 'Property management and accounting software by AppFolio'}))
-								remove_link = true
-								result << "link_removed "
+								line = line.gsub(/(<%=\slink_to\(\'property management and accounting software',\'http:\/\/(www.)?appfolio.com',.*/, 'property management and accounting software')
+								add_link = true
+								result << "no_link "
 								puts oldLine
 								puts line
 								puts "\n"
 							end
 							result << line
 						end
-						newfooterFile << line
+						newtechFile << line
 
 					end
-					footerFile.close
-					newfooterFile.close
-					if link_removed
+					techFile.close
+					newtechFile.close
+					if has_link
 						has_nof_count += 1
 					end
-					if remove_link
+					if add_link
 						no_nof_count += 1
-						puts `mv app/views/shared/_footer_sub.html.erb.new app/views/shared/_footer_sub.html.erb`
-						puts `git commit -am "mass update - remove anchor link from footer"`
+						puts `mv app/views/our_technology/_index.html.erb.new app/views/our_technology/_index.html.erb`
+						puts `git commit -am "ws - remove appfolio link from our technology"`
 						puts `git push origin #{customer_name}`
 					else
-						puts `rm app/views/shared/_footer_sub.html.erb.new`
+						puts `rm app/views/our_technology/_index.html.erb.new`
 					end
 
-					if !has_href_in_footer
+					if !has_href_appfolio
 						no_href_appfolio_count += 1
-						result << "nolink_in_footer\n"
+						result << "no_appfolio_herf\n"
 					end
 
 				end
 				
-				has_footerFile_count += 1
+				has_techFile_count += 1
 			else
 				result << "footer_file_do_not_exist\n"
-				no_footerFile_count += 1
+				no_techFile_count += 1
 			end
-
-			#
 
 			# save web url
 			prodFName = "config/deploy/prod.rb"
@@ -155,12 +153,12 @@ branches.each do |branch|
 end
 result << "\n"
 result << "customer metrics:\n"
-result << "- has_footerFile_count: #{has_footerFile_count}\n"
-result << "- has_subFooterFile_count: #{has_subFooterFile_count}\n"
+result << "- has_techFile_count: #{has_techFile_count}\n"
+result << "- has_subTechFile_count: #{has_subTechFile_count}\n"
 result << "-- has_nof_count: #{has_nof_count}\n"
 result << "-- no_nof_count: #{no_nof_count}\n"
 result << "-- no_href_appfolio_count: #{no_href_appfolio_count}\n"
-result << "- no_footerFile_count: #{no_footerFile_count}\n"
+result << "- no_techFile_count: #{no_techFile_count}\n"
 puts "no_nof_cnt: #{no_nof_cnt}"
 puts "has_nof_cnt: #{has_nof_cnt}"
 puts "no_href_appfolio_cnt: #{no_href_appfolio_cnt}"
